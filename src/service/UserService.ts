@@ -1,5 +1,6 @@
 import { PrismaClient } from "@prisma/client";
-import userBody from "../types/userBody.js";
+import { encryptPassword } from "../utils/encrypt.js" 
+import responseUser from "../types/responseUser.js";
 
 
 export default class UserService{
@@ -11,7 +12,7 @@ export default class UserService{
         this.prisma = new PrismaClient();
     }
 
-    async createUser(name: string, email: string, password: string, role_id: number): Promise<userBody | undefined> {
+    async createUser(name: string, email: string, password: string, role_id: number): Promise<responseUser | undefined> {
         try{
             const user = await this.prisma.user.findFirst({
                 where:{
@@ -19,15 +20,23 @@ export default class UserService{
                 }
             })
             if(!user){
+                const hashPassword = await encryptPassword(password);
                 const newUser = await this.prisma.user.create({
                     data:{
                         name: name,
                         email: email,
-                        password: password,
+                        password: hashPassword,
                         role_id: role_id
+                    },
+                    select:{
+                        id: true,
+                        name: true,
+                        email: true,
+                        role_id: true
+
                     }
                 })
-                return newUser 
+                return <responseUser>newUser;
             }
             return undefined
             
